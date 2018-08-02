@@ -36,9 +36,9 @@ export default (config, http, responseUrl) => {
       .reduce((result, item) => [...result, item], [])
       .toPromise();
 
-  const postMessage = (imId, message) =>
+  const postMessage = (imId, { header, messages }) =>
     api.postJson('/chat.postMessage', {
-      channel: imId, text: message, as_user: false,
+      channel: imId, text: header, attachments: [{ text: messages.join('\n') }], as_user: false,
     }).toPromise();
 
   return {

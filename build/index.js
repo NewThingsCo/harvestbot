@@ -53,7 +53,7 @@ const calcFlextime = exports.calcFlextime = (req, res) => {
     _log2.default.info(`Fetching data for user id ${userId}`);
     slack.getUserEmailForId(userId).then(email => {
       (0, _db2.default)(config).storeUserData(userId, email);
-      (0, _app2.default)(config, _http2.default, slack.postResponse).calcFlexTime(email);
+      (0, _app2.default)(config, _http2.default).sendFlexTime(email, slack.postResponse);
     }).catch(err => _log2.default.error(err));
   } else {
     _log2.default.error('User id missing.');
@@ -64,9 +64,13 @@ const calcFlextime = exports.calcFlextime = (req, res) => {
 const notifyUsers = exports.notifyUsers = (req, res) => {
   const config = validateEnv();
   const store = (0, _db2.default)(config);
-  store.fetchUserIds.then(userIds => {
+  store.fetchUsers.then(users => {
     const slack = (0, _slack2.default)(config, _http2.default);
-    slack.getImIds(userIds).then(imData => imData.forEach(imItem => _log2.default.info(imItem)));
+    const app = (0, _app2.default)(config, _http2.default);
+    slack.getImIds(users.map(({ id }) => id)).then(imData => imData.filter(item => item.imId === 'D547CU95J').forEach(imItem => {
+      const user = users.find(({ id }) => imItem.userId === id);
+      app.calcFlexTime(user.email).then(data => slack.postMessage(imItem.imId, data));
+    }));
   }).catch(() => _log2.default.error('Unable to fetch user ids.'));
   return res.json({ text: 'ok' });
 };
@@ -81,5 +85,7 @@ if (process.argv.length === 3) {
 
   const email = process.argv[2];
   _log2.default.info(`Email ${email}`);
-  (0, _app2.default)(validateEnv(), _http2.default, printResponse).calcFlexTime(email);
+  const app = (0, _app2.default)(validateEnv(), _http2.default);
+  app.sendFlexTime(email, printResponse);
+  notifyUsers(null, { json: data => _log2.default.info(data) });
 }

@@ -82,7 +82,7 @@ workflows:
   notify:
     triggers:
       - schedule:
-          cron: "30 * * * 1-5"
+          cron: "30 * * * *"
           filters:
             branches:
               only:

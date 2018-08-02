@@ -31,8 +31,8 @@ exports.default = (config, http, responseUrl) => {
 
   const getImIds = userIds => getImsForPage().expand(({ nextCursor }) => nextCursor ? getImsForPage(nextCursor) : (0, _empty.empty)()).mergeMap(({ ims }) => ims).map(({ user: userId, id: imId, is_user_deleted: deleted }) => ({ userId, imId, deleted })).filter(({ userId, deleted }) => userIds.includes(userId) && !deleted).reduce((result, item) => [...result, item], []).toPromise();
 
-  const postMessage = (imId, message) => api.postJson('/chat.postMessage', {
-    channel: imId, text: message, as_user: false
+  const postMessage = (imId, { header, messages }) => api.postJson('/chat.postMessage', {
+    channel: imId, text: header, attachments: [{ text: messages.join('\n') }], as_user: false
   }).toPromise();
 
   return {

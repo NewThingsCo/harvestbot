@@ -3,7 +3,7 @@ import harvest from '../harvest';
 import analyze from '../analyzer';
 import cal from '../calendar';
 
-export default (config, http, response) => {
+export default (config, http) => {
   const formatDate = date => date.toLocaleDateString(
     'en-US',
     {
@@ -18,20 +18,19 @@ export default (config, http, response) => {
   const tracker = harvest(config, http);
   const round = val => Math.floor(val * 2) / 2;
 
-  const calcFlexTime = (email) => {
+  const calcFlexTime = email => new Promise((resolve) => {
     const userName = validateEmail(email);
     if (!userName) {
-      return response(`Invalid email domain for ${email}`);
+      return resolve({ header: `Invalid email domain for ${email}` });
     }
 
     logger.info(`Ignore following task ids ${config.ignoreTaskIds}`);
     logger.info(`Fetch data for ${email}`);
-    response(`Fetching time entries for email ${email}`);
 
     return tracker.getTimeEntries(userName, validateEmail)
       .then((entries) => {
         if (!entries) {
-          return response(`Unable to find time entries for ${email}`);
+          return resolve({ header: `Unable to find time entries for ${email}` });
         }
         const messages = [];
         const latestFullDay = calendar.getLatestFullWorkingDay();
@@ -59,11 +58,17 @@ export default (config, http, response) => {
         logger.info(header);
 
         logger.info('All done!');
-        return response(header, messages);
+        return resolve({ header, messages });
       });
+  });
+
+  const sendFlexTime = (email, response) => {
+    response(`Fetching time entries for email ${email}`);
+    calcFlexTime(email).then(({ header, messages }) => response(header, messages));
   };
 
   return {
     calcFlexTime,
+    sendFlexTime,
   };
 };

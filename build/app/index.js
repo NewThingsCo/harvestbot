@@ -22,7 +22,7 @@ var _calendar2 = _interopRequireDefault(_calendar);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-exports.default = (config, http, response) => {
+exports.default = (config, http) => {
   const formatDate = date => date.toLocaleDateString('en-US', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
   });
@@ -33,19 +33,18 @@ exports.default = (config, http, response) => {
   const tracker = (0, _harvest2.default)(config, http);
   const round = val => Math.floor(val * 2) / 2;
 
-  const calcFlexTime = email => {
+  const calcFlexTime = email => new Promise(resolve => {
     const userName = validateEmail(email);
     if (!userName) {
-      return response(`Invalid email domain for ${email}`);
+      return resolve({ header: `Invalid email domain for ${email}` });
     }
 
     _log2.default.info(`Ignore following task ids ${config.ignoreTaskIds}`);
     _log2.default.info(`Fetch data for ${email}`);
-    response(`Fetching time entries for email ${email}`);
 
     return tracker.getTimeEntries(userName, validateEmail).then(entries => {
       if (!entries) {
-        return response(`Unable to find time entries for ${email}`);
+        return resolve({ header: `Unable to find time entries for ${email}` });
       }
       const messages = [];
       const latestFullDay = calendar.getLatestFullWorkingDay();
@@ -73,11 +72,17 @@ exports.default = (config, http, response) => {
       _log2.default.info(header);
 
       _log2.default.info('All done!');
-      return response(header, messages);
+      return resolve({ header, messages });
     });
+  });
+
+  const sendFlexTime = (email, response) => {
+    response(`Fetching time entries for email ${email}`);
+    calcFlexTime(email).then(({ header, messages }) => response(header, messages));
   };
 
   return {
-    calcFlexTime
+    calcFlexTime,
+    sendFlexTime
   };
 };
