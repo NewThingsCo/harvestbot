@@ -15,46 +15,47 @@ const validateEnv = () => {
   config.harvestAccessToken = getEnvParam('HARVEST_ACCESS_TOKEN');
   config.harvestAccountId = getEnvParam('HARVEST_ACCOUNT_ID');
   config.slackBotToken = getEnvParam('SLACK_BOT_TOKEN');
+  config.notifyChannelId = getEnvParam('SLACK_NOTIFY_CHANNEL_ID');
   return config;
 };
 
-export const calcFlextime = (req, res) => {
+export const calcFlextime = async (req, res) => {
   if (req.body.text === 'help') {
     return res.json({ text: '_Bot for calculating your harvest balance. Use /flextime with no parameters to start calculation._' });
   }
 
+  res.json({ text: 'Starting to calculate flextime. This may take a while...' });
+
   const config = validateEnv();
   const slack = slackApi(config, http, req.body.response_url);
   const userId = req.body.user_id;
+
   if (userId) {
     logger.info(`Fetching data for user id ${userId}`);
-    slack.getUserEmailForId(userId)
-      .then((email) => {
-        db(config).storeUserData(userId, email);
-        application(config, http).sendFlexTime(email, slack.postResponse);
-      })
-      .catch(err => logger.error(err));
-  } else {
-    logger.error('User id missing.');
+    const email = await slack.getUserEmailForId(userId);
+    if (!email) {
+      return slack.postResponse({ text: 'Cannot find email for Slack user id' });
+    }
+    db(config).storeUserData(userId, email);
+    return application(config, http).sendFlexTime(email, slack.postResponse);
   }
-  return res.json({ text: 'Starting to calculate flextime. This may take a while...' });
+  return slack.postResponse({ text: 'Cannot find email for Slack user id' });
 };
 
-export const notifyUsers = (req, res) => {
+export const notifyUsers = async (req, res) => {
   const config = validateEnv();
   const store = db(config);
-  store.fetchUsers.then((users) => {
-    logger.info(`Found ${users.length} users`);
-    const slack = slackApi(config, http);
-    const app = application(config, http);
-    slack.getImIds(users.map(({ id }) => id)).then(imData =>
-      imData
-        .forEach((imItem) => {
-          const user = users.find(({ id }) => imItem.userId === id);
-          logger.info(`Notify ${user.email}`);
-          app.calcFlexTime(user.email).then(data => slack.postMessage(imItem.imId, data));
-        }));
-  }).catch(() => logger.error('Unable to fetch user ids.'));
+  const slack = slackApi(config, http);
+  const app = application(config, http);
+
+  const users = await store.fetchUsers;
+  logger.info(`Found ${users.length} users`);
+
+  users.forEach(async ({ email, id }) => {
+    logger.info(`Notify ${email}`);
+    const data = await app.calcFlexTime(email);
+    slack.postMessage(config.notifyChannelId, id, data);
+  });
   return res.json({ text: 'ok' });
 };
 
@@ -71,5 +72,5 @@ if (process.argv.length === 3) {
   logger.info(`Email ${email}`);
   const app = application(validateEnv(), http);
   app.sendFlexTime(email, printResponse);
-  notifyUsers(null, { json: data => logger.info(data) });
+  // notifyUsers(null, { json: data => logger.info(data) });
 }
