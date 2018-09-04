@@ -41,7 +41,7 @@
     "googleapis": "33.0.0",
     "rxios": "1.1.2",
     "rxjs": "5.5.10",
-    "winston": "3.0.0",
+    "winston": "3.0.1",
     "xlsx": "0.13.5"
   },
   "devDependencies": {
