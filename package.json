@@ -31,7 +31,7 @@
   "dependencies": {
     "@babel/runtime": "7.0.0",
     "@google-cloud/datastore": "1.4.1",
-    "@google-cloud/logging-winston": "0.9.0",
+    "@google-cloud/logging-winston": "0.10.0",
     "@google-cloud/pubsub": "0.20.0",
     "@google-cloud/storage": "2.0.3",
     "@sendgrid/mail": "6.3.1",
