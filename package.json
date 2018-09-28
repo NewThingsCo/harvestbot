@@ -29,7 +29,7 @@
   "author": "lauravuo",
   "license": "MIT",
   "dependencies": {
-    "@babel/runtime": "7.0.0",
+    "@babel/runtime": "7.1.1",
     "@google-cloud/datastore": "1.4.1",
     "@google-cloud/logging-winston": "0.9.0",
     "@google-cloud/pubsub": "0.20.0",
