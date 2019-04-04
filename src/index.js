@@ -66,6 +66,7 @@ export const calcFlextime = async (message) => {
   if (userId) {
     logger.info(`Fetching data for user id ${userId}`);
     const email = request.email || await slack.getUserEmailForId(userId);
+    const { startDate, endDate, calcAll } = request;
     if (!email) {
       return slack.postMessage(userId, 'Cannot find email for Slack user id');
     }
@@ -75,7 +76,7 @@ export const calcFlextime = async (message) => {
     await db(config).storeUserData(userId, email);
     logger.info('User data stored');
 
-    const data = await application(config, http).calcFlextime(email);
+    const data = await application(config, http).calcFlextime(email, startDate, endDate, calcAll);
     logger.info('Flextime calculated');
 
     return slack.postMessage(userId, data.header, data.messages);

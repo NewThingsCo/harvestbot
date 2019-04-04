@@ -15,51 +15,43 @@ export default ({ taskIds }) => {
   const isHolidayOrFlex = taskId => isHoliday(taskId) || isFlexLeave(taskId);
   const isAbsence = taskId => isHolidayOrFlex(taskId) || isSickLeave(taskId);
 
-  const getPeriodRangeEnd = (entriesDate, latestFullDate, today = new Date()) => (
-    calendar.datesEqual(entriesDate, today)
-      ? entriesDate
-      : latestFullDate
-  );
-
   const getPeriodRange = (
     entries,
-    latestFullDate,
-    sortedEntries = entries.sort(sortByDate),
-    latestRecordDate = new Date(sortedEntries[sortedEntries.length - 1].date),
-    endDate = getPeriodRangeEnd(
-      latestRecordDate,
-      latestFullDate,
-    ),
-    sortedRangeEntries = sortedEntries.filter(
-      entry => new Date(entry.date).getTime() <= endDate.getTime(),
-    ),
-  ) => ({
-    entries: sortedRangeEntries, // sorted entries for range
-    start: new Date(sortedEntries[0].date), // start date
-    end: endDate, // today or last calendar working day
-  });
+    endDate = calendar.getLatestFullWorkingDay(),
+    startDate,
+  ) => {
+    const sortedRangeEntries = entries.filter((entry) => {
+      const entryDate = new Date(entry.date);
+      return endDate >= entryDate && (!startDate || startDate <= entryDate);
+    }).sort(sortByDate);
+
+    return {
+      entries: sortedRangeEntries,
+      start: startDate || new Date(sortedRangeEntries[0].date),
+      end: endDate,
+    };
+  };
 
   const isCurrentMonth = date => date.getFullYear() === calendar.CURRENT_YEAR
     && date.getMonth() === calendar.CURRENT_MONTH;
 
-  const calculateWorkedHours = (
-    entries,
-    filtered = entries.reduce((result, entry) => {
+  const calculateWorkedHours = (entries, calcAll) => {
+    const filtered = entries.reduce((result, entry) => {
       const entryDate = new Date(entry.date);
       const isWorkingDay = calendar.isWorkingDay(entryDate);
       const ignoreEntry = isPublicHoliday(entry.taskId) || isFlexLeave(entry.taskId);
-      const ignoreFromTotal = !isWorkingDay || ignoreEntry;
-      const isCurrenMonthEntry = !ignoreFromTotal && isCurrentMonth(entryDate);
+      const ignoreFromTotal = ignoreEntry || (!calcAll && !isWorkingDay);
+      const isCurrentMonthEntry = !ignoreFromTotal && isCurrentMonth(entryDate);
 
       return {
         ...result,
         warnings: !ignoreEntry && !isWorkingDay
-          ? [...result.warnings, `Recorded hours in non-working day (${entry.date}) - ignoring!`] : result.warnings,
+          ? [...result.warnings, `Recorded hours in non-working day (${entry.date})${calcAll ? '' : ' - ignoring'}!`] : result.warnings,
         total: ignoreFromTotal ? result.total : result.total + entry.hours,
-        billable: isCurrenMonthEntry && entry.billable
+        billable: isCurrentMonthEntry && entry.billable
           ? result.billable + entry.hours
           : result.billable,
-        nonBillable: isCurrenMonthEntry && !entry.billable
+        nonBillable: isCurrentMonthEntry && !entry.billable
           ? result.nonBillable + entry.hours
           : result.nonBillable,
       };
@@ -68,15 +60,16 @@ export default ({ taskIds }) => {
       total: 0,
       billable: 0,
       nonBillable: 0,
-    }),
-    allHours = filtered.billable + filtered.nonBillable,
-  ) => ({
-    warnings: filtered.warnings,
-    total: filtered.total,
-    billablePercentageCurrentMonth: allHours
-      ? Math.floor((filtered.billable / (allHours)) * 100)
-      : 0,
-  });
+    });
+    const allHours = filtered.billable + filtered.nonBillable;
+    return {
+      warnings: filtered.warnings,
+      total: filtered.total,
+      billablePercentageCurrentMonth: allHours
+        ? Math.floor((filtered.billable / (allHours)) * 100)
+        : 0,
+    };
+  };
 
   const addDayStats = (entry, result) => {
     const {

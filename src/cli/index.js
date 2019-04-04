@@ -26,9 +26,9 @@ export default (config, http) => {
     logger.info(`Sent report to ${email}`);
   };
 
-  const calcFlexTime = async (email) => {
-    logger.info(`Calculating flextime for ${email}`);
-    const data = await app.calcFlextime(email);
+  const calcFlexTime = async (email, startDate, endDate, calcAll) => {
+    logger.info(`Calculating flextime for ${email} ${startDate} ${endDate} ${calcAll ? 'all hours included' : ''}`);
+    const data = await app.calcFlextime(email, startDate, endDate, calcAll);
     printResponse(data.header, data.messages);
   };
 
@@ -65,7 +65,7 @@ export default (config, http) => {
       .description('Send monthly statistics to given email address.')
       .action(generateStats);
     program
-      .command('flextime <email>')
+      .command('flextime <email> [startDate] [endDate] [calcAll]')
       .description('Calculate flex saldo for given user.')
       .action(calcFlexTime);
     program

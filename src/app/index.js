@@ -24,7 +24,7 @@ export default (config, http) => {
   const tracker = harvest(config, http);
   const round = val => Math.floor(val * 2) / 2;
 
-  const calcFlextime = async (email) => {
+  const calcFlextime = async (email, startDate, endDate, calcAll) => {
     const userName = validateEmail(email);
     if (!userName) {
       return { header: `Invalid email domain for ${email}` };
@@ -36,15 +36,18 @@ export default (config, http) => {
     if (!entries) {
       return { header: `Unable to find time entries for ${email}` };
     }
-    const latestFullDay = calendar.getLatestFullWorkingDay();
 
-    const range = analyzer.getPeriodRange(entries, latestFullDay);
-    logger.info(`Received range starting from ${formatDate(range.start)} to ${formatDate(range.end)}`);
+    const range = analyzer.getPeriodRange(
+      entries,
+      endDate && new Date(endDate),
+      startDate && new Date(startDate),
+    );
+    logger.info(`Received date range from ${formatDate(range.start)} to ${formatDate(range.end)}`);
 
     const totalHours = calendar.getTotalWorkHoursSinceDate(range.start, range.end);
     logger.info(`Total working hours from range start ${totalHours}`);
 
-    const result = analyzer.calculateWorkedHours(range.entries);
+    const result = analyzer.calculateWorkedHours(range.entries, !!calcAll);
     if (result.warnings.length > 0) {
       logger.info(result.warnings);
     } else {

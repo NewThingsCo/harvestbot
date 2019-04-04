@@ -68,6 +68,18 @@ describe('Analyzer', () => {
           { date: '2018-07-20' },
         ],
       }));
+    it('should allow for custom startDate', () => expect(
+      getPeriodRange(mockDates, new Date('2018-07-20'), new Date('2017-12-06')),
+    )
+      .toEqual({
+        start: new Date('2017-12-06'),
+        end: new Date('2018-07-20'),
+        entries: [
+          { date: '2017-12-07' },
+          { date: '2018-05-09' },
+          { date: '2018-07-20' },
+        ],
+      }));
   });
   describe('calculateWorkedHours', () => {
     it('should calculate worked hours', () => expect(calculateWorkedHours(mockEntries))
@@ -76,6 +88,13 @@ describe('Analyzer', () => {
         total: 7.5,
         warnings: ['Recorded hours in non-working day (2017-12-24) - ignoring!'],
       }));
+    it('should calculate all worked hours when calcAll true',
+      () => expect(calculateWorkedHours(mockEntries, true))
+        .toEqual({
+          billablePercentageCurrentMonth: 0,
+          total: 15,
+          warnings: ['Recorded hours in non-working day (2017-12-24)!'],
+        }));
   });
   describe('getHoursStats', () => {
     it('should get hours stats', () => expect(getHoursStats(mockTask, 1))
