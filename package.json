@@ -53,7 +53,7 @@
     "commander": "3.0.0",
     "config": "3.2.2",
     "eslint": "5.15.3",
-    "eslint-config-airbnb-base": "13.2.0",
+    "eslint-config-airbnb-base": "14.0.0",
     "eslint-plugin-import": "2.16.0",
     "jest": "24.1.0",
     "rimraf": "2.6.3"
