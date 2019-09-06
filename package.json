@@ -30,7 +30,7 @@
   "author": "NewThingsCo",
   "license": "MIT",
   "dependencies": {
-    "@babel/runtime": "7.5.5",
+    "@babel/runtime": "7.6.0",
     "@google-cloud/datastore": "4.2.0",
     "@google-cloud/logging-winston": "2.0.1",
     "@google-cloud/pubsub": "0.31.1",
